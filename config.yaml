@@ -1,3 +1,4 @@
-config:
-  - goes
-  - here
+s3_bucket: geiselc-ddb-autoscale-schedule
+# config:
+#   - goes
+#   - here
