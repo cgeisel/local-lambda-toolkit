@@ -5,6 +5,7 @@ import yaml
 from my_lambda_package.utility import Utility
 
 import boto3
+from botocore.exceptions import ClientError
 import json
 from croniter import croniter
 from datetime import datetime
@@ -69,11 +70,25 @@ def handler(event, context):
         logger.info('\tReadCapacityUnits: \tMin: {0} \tMax: {1} \tTargetValue: {2}'.format(active_policy['ReadCapacityUnits']['MinCapacity'], active_policy['ReadCapacityUnits']['MaxCapacity'], active_policy['ReadCapacityUnits']['TargetValue']))
         logger.info('\tWriteCapacityUnits: \tMin: {0} \tMax: {1} \tTargetValue: {2}'.format(active_policy['WriteCapacityUnits']['MinCapacity'], active_policy['WriteCapacityUnits']['MaxCapacity'], active_policy['WriteCapacityUnits']['TargetValue']))
 
-        # todo: check that table exists
+        # todo: check that table exists and is active
+        dynamodb = boto3.client('dynamodb')
+        try:
+            response = dynamodb.describe_table(
+                TableName=table_name
+            )
 
-        autoscaling = boto3.client('application-autoscaling')
+            if response['Table']['TableStatus'] != 'ACTIVE':
+                raise
+        except ClientError as e:
+            if e.response['ResponseMetadata']['HTTPStatusCode'] == 400:
+                logger.error('Table {0} not found'.format(table_name))
+            else:
+                logger.error('Something went wrong')
+            logger.error('Request ID {0}'.format(response['ResponseMetadata']['RequestId']))
+            raise
 
         # check existing target value and capacity
+        autoscaling = boto3.client('application-autoscaling')
         existing_scaling_policies = autoscaling.describe_scaling_policies(
             PolicyNames=[
                 'DynamoDBReadCapacityUtilization:table/'+table_name,
@@ -82,8 +97,8 @@ def handler(event, context):
             ServiceNamespace='dynamodb',
             ResourceId='table/'+table_name
         )
-        # print existing_scaling_policies
 
+        # print existing_scaling_policies
         update_read_policy = False
         update_write_policy = False
         for existing_policy in existing_scaling_policies['ScalingPolicies']:
@@ -108,7 +123,6 @@ def handler(event, context):
         )
 
         # print existing_scalable_targets
-
         update_read_target = False
         update_write_target = False
         for existing_target in existing_scalable_targets['ScalableTargets']:
