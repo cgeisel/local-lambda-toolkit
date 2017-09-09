@@ -51,6 +51,10 @@ def handler(event, context):
             logger.error('File name does not match table name, skipping {0}'.format(obj.key))
             break
 
+        if not table_config['enabled']:
+            logger.info('Scaling plan for {0} not enabled, skipping'.format(table_name))
+            break
+
         logger.info('Getting scaling policies for: \t{0}'.format(table_name))
         logger.info('Current time: \t{0}'.format(now))
         logger.debug('Policies: {0}'.format(table_config['policies']))
@@ -84,7 +88,7 @@ def handler(event, context):
                 logger.error('Table {0} not found'.format(table_name))
             else:
                 logger.error('Something went wrong')
-            logger.error('Request ID {0}'.format(response['ResponseMetadata']['RequestId']))
+            logger.error('Request ID {0}'.format(e.response['ResponseMetadata']['RequestId']))
             raise
 
         # check existing target value and capacity
