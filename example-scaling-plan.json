@@ -1,0 +1,34 @@
+{
+    "table": "example-ddb-table",
+    "enabled": true,
+    "policies": [
+        {
+            "cron": "0 19 * * 5",
+            "name": "Scale Up",
+            "ReadCapacityUnits": {
+              "MaxCapacity": 100,
+              "MinCapacity": 100,
+              "TargetValue": 70.0
+            },
+            "WriteCapacityUnits": {
+              "MaxCapacity": 50,
+              "MinCapacity": 50,
+              "TargetValue": 70.0
+            }
+        },
+        {
+            "cron": "0 20 * * 1",
+            "name": "Scale Down",
+            "ReadCapacityUnits": {
+              "MaxCapacity": 100,
+              "MinCapacity": 5,
+              "TargetValue": 70.0
+            },
+            "WriteCapacityUnits": {
+              "MaxCapacity": 50,
+              "MinCapacity": 1,
+              "TargetValue": 70.0
+            }
+        }
+    ]
+}
