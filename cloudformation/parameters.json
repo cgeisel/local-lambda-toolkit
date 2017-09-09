@@ -1,16 +1,16 @@
 [
   {
-    "ParameterValue": "local-development",
+    "ParameterValue": "DynamoDBCapacityScheduler",
     "UsePreviousValue": false,
     "ParameterKey": "ResourcePrefix"
   },
   {
-    "ParameterValue": "rate(5 minutes)",
+    "ParameterValue": "rate(1 minute)",
     "UsePreviousValue": false,
     "ParameterKey": "ScheduleExpression"
   },
   {
-    "ParameterValue": "300",
+    "ParameterValue": "60",
     "UsePreviousValue": false,
     "ParameterKey": "Timeout"
   },
@@ -18,5 +18,10 @@
     "ParameterValue": "256",
     "UsePreviousValue": false,
     "ParameterKey": "MemorySize"
+  },
+  {
+    "ParameterValue": "geiselc-ddb-autoscale-schedule",
+    "UsePreviousValue": false,
+    "ParameterKey": "SchedulerS3Bucket"
   }
 ]

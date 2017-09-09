@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
-Description: A 'lambda_function' stack for project 'tam-demo-function'; rendered on 2017-03-16 by fabricate.
+Description: A Lambda stack for project DynamoDBCapacityScheduler
 
 Metadata:
   CommitHash: ff89eaa5595d27ba152a20876ac53cdee061acf5
@@ -24,6 +24,10 @@ Parameters:
   MemorySize:
     Type: Number
     Description: Memory for the function in MB
+
+  SchedulerS3Bucket:
+    Type: String
+    Description: Non-public S3 bucket containing JSON documents describing capacity plans for your DynamoDB tables
 
 Conditions:
   HasSchedule:
@@ -62,7 +66,7 @@ Resources:
       Runtime: python2.7
       MemorySize: { Ref: MemorySize }
 
-  Policy:
+  LambdaBasicPolicy:
     Type: AWS::IAM::Policy
     Properties:
       Roles:
@@ -82,6 +86,49 @@ Resources:
               - "ec2:DescribeSecurityGroups"
             Resource: "*"
 
+  SchedulerS3BucketPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      Roles:
+        - { Ref: LambdaFunctionExecutionRole }
+      PolicyName: SchedulerS3BucketPolicy
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - "s3:ListBucket"
+            Resource:
+              "Fn::Sub":
+                "arn:aws:s3:::${SchedulerS3Bucket}"
+          - Effect: Allow
+            Action:
+              - "s3:GetObject"
+            Resource:
+              "Fn::Sub":
+                "arn:aws:s3:::${SchedulerS3Bucket}/*"
+
+  DynamoDbScalingPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      Roles:
+        - { Ref: LambdaFunctionExecutionRole }
+      PolicyName: DynamoDbScalingPolicy
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - "application-autoscaling:DescribeScalableTargets"
+              - "application-autoscaling:DescribeScalingPolicies"
+              - "application-autoscaling:PutScalingPolicy"
+              - "application-autoscaling:RegisterScalableTarget"
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - "dynamodb:DescribeTable"
+            Resource: "arn:aws:dynamodb:*:*:table/*"
+
 
   # The IAM role that the lambda function will execute under.
   LambdaFunctionExecutionRole:
@@ -92,7 +139,7 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service: [ lambda.amazonaws.com ]
+              Service: [ lambda.amazonaws.com, application-autoscaling.amazonaws.com, dynamodb.amazonaws.com ]
             Action:
               - sts:AssumeRole
           - Effect: Allow
